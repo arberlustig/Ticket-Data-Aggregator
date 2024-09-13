@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.IO;
+using System.Linq.Expressions;
 using System.Text;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.PageSegmenter;
@@ -8,30 +9,21 @@ using UglyToad.PdfPig.DocumentLayoutAnalysis.ReadingOrderDetector;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
-
-string targetPath = @"C:\Users\Arber.Gashi\Downloads\Tickets\TicketsVerkauf";
+string targetPath = @"C:\Users\boahd\Downloads\Tickets\TicketsVerkauf";
 string[] filesPDFs = new PDFReader().FilesReader(targetPath);
 new PDFReader().PDFReaderData(filesPDFs);
-
-
-
 Console.ReadKey();
-
-
 public class PDFReader
 {
-
-
     public void PDFReaderData(string[] filesPDFs)
     {
         var pageNumber = 1;
 
         foreach (var file in filesPDFs)
         {
-
-
             using (PdfDocument document = PdfDocument.Open(file))
             {
                 var builder = new PdfDocumentBuilder { };
@@ -55,7 +47,7 @@ public class PDFReader
                 // 3. Postprocessing
                 var readingOrder = UnsupervisedReadingOrderDetector.Instance;
                 var orderedTextBlocks = readingOrder.Get(textBlocks);
-              
+
                 // 4. Add debug info - Bounding boxes and reading order
                 foreach (var block in orderedTextBlocks)
                 {
@@ -66,7 +58,6 @@ public class PDFReader
 
                     if (block.ReadingOrder > 0 && block.ReadingOrder < orderedTextBlocks.Count() - 1)
                     {
-
                         switch (new string(orderedTextBlocks.Last().Text.Skip(24).ToArray()))
                         {
 
@@ -74,30 +65,26 @@ public class PDFReader
                                 CultureInfo.CurrentCulture = new CultureInfo("ja-JP");
                                 string dateString = block.TextLines[1].ToString().Substring(6);
                                 DateTime date = DateTime.Parse(dateString);
-                                File.WriteAllText(@"C:\Users\Arber.Gashi\Downloads\Tickets\DATEN\aggregatedTickets.txt", 
-                                    String.Format("{0,-30} | {1, -29} | {2, -10}", block.TextLines[0].ToString().Substring(7), date.ToString("d"), block.TextLines[2].ToString().Substring(6)));
+                                PrinterInData(@"C:\Users\boahd\Downloads\Tickets\DATA\aggregatedTickets.txt", block, date);
                                 break;
 
                             case "com":
                                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
                                 string dateString2 = block.TextLines[1].ToString().Substring(6);
                                 DateTime date2 = DateTime.Parse(dateString2);
-                                File.WriteAllText(@"C:\Users\Arber.Gashi\Downloads\Tickets\DATEN\aggregatedTickets.txt",
-                                    String.Format("{0,-30} | {1, -29} | {2, -5}", block.TextLines[0].ToString().Substring(7), date2.ToString("d"), block.TextLines[2].ToString().Substring(6)));
+
+                                PrinterInData(@"C:\Users\boahd\Downloads\Tickets\DATA\aggregatedTickets.txt", block, date2);
                                 break;
+
+
+
                             case "fr":
                                 CultureInfo.CurrentCulture = new CultureInfo("fr-FR");
                                 string dateString3 = block.TextLines[1].ToString().Substring(6);
                                 DateTime date3 = DateTime.Parse(dateString3);
-                                File.WriteAllText(@"C:\Users\Arber.Gashi\Downloads\Tickets\DATEN\aggregatedTickets.txt",
-                                    String.Format("{0,-30} | {1, -29} | {2, -10}", block.TextLines[0].ToString().Substring(7), date3.ToString("d"), block.TextLines[2].ToString().Substring(6)));
+                                PrinterInData(@"C:\Users\boahd\Downloads\Tickets\DATA\aggregatedTickets.txt", block, date3);
                                 break;
-
-
                         }
-
-
-
                     }
                 }
 
@@ -105,9 +92,27 @@ public class PDFReader
 
         }
     }
-
     public string[] FilesReader(string targetPath)
     {
         return Directory.GetFiles(targetPath);
+    }
+
+    public void PrinterInData(string filePath, UglyToad.PdfPig.DocumentLayoutAnalysis.TextBlock block, DateTime date)
+    {
+        if (!File.Exists(filePath))
+        {
+
+            using (StreamWriter streamwriter = new StreamWriter(filePath, false))
+            {
+                streamwriter.WriteLine("{0,-30} | {1, -29} | {2, -10}", block.TextLines[0].ToString().Substring(7), date.ToString("d"), block.TextLines[2].ToString().Substring(6));
+            }
+        }
+        else
+        {
+            using (StreamWriter writer = new StreamWriter(filePath, true))
+            {
+                writer.WriteLine("{0,-30} | {1, -29} | {2, -10}", block.TextLines[0].ToString().Substring(7), date.ToString("d"), block.TextLines[2].ToString().Substring(6));
+            }
+        }
     }
 }
